@@ -4,8 +4,9 @@
 
 class NDFS{
     public:
-        bool faillock = false; // If the database has a lock present, this will become true.
 
+        // Basic functionality
+        bool faillock = false; // If the database has a lock present, this will become true.
         NDFS(std::string databaseDirectory){ // Create or open a database
             storedDatabaseDirectory = databaseDirectory; // Store database directory to variable
             lockfileDirectory = storedDatabaseDirectory + ".lock"; // Makes a lockfile directory for locking the database
@@ -33,7 +34,10 @@ class NDFS{
             } 
             return false;
         }
+
+        // Column manipulation
         int createColumn(std::string columnName){ // Creates a column in the database
+        
             if(isLocked()) {std::cerr << "Lockfile present\n"; return -2;} // Checks if database is locked
             if(getColumnPosition(columnName)>-1){std::cerr << "Column already exists\n"; return -1;} // Checks that the column doesnt already exist
             
@@ -106,6 +110,11 @@ class NDFS{
             }
             unlock();
             return -1; // Cant find it
+        }
+        int removeColumn(std::string columnName){ // NEEDS TO BE DONE WHEN ROWS ARE DONE
+
+        // Row manipulation
+
         }
 
     private:
