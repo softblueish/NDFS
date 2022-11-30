@@ -1,6 +1,0 @@
-class NDFS{
-    public:
-
-    private:
-    
-};
