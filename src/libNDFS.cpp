@@ -4,11 +4,13 @@
 
 class NDFS{
     public:
+        bool faillock = false; // If the database has a lock present, this will become true.
+
         NDFS(std::string databaseDirectory){ // Create or open a database
             storedDatabaseDirectory = databaseDirectory; // Store database directory to variable
             lockfileDirectory = storedDatabaseDirectory + ".lock"; // Makes a lockfile directory for locking the database
-            if(isLocked()) {return -2;} // Checks if database is locked
-            
+            if(isLocked()) {faillock = true; std::cerr << "Lockfile present\n"; return;} // Checks if database is locked
+            faillock = false;
             std::ifstream inputDatabaseFilestream(databaseDirectory); // Check if database is empty, if not, initialize one
             lock();
             std::string buffer;
@@ -32,9 +34,10 @@ class NDFS{
             return false;
         }
         int createColumn(std::string columnName){ // Creates a column in the database
-            if(isLocked()) {return -2;} // Checks if database is locked
+            if(isLocked()) {std::cerr << "Lockfile present\n"; return -2;} // Checks if database is locked
+            if(getColumnPosition(columnName)>-1){std::cerr << "Column already exists\n"; return -1;} // Checks that the column doesnt already exist
+            
             lock();
-
             std::string readBuffer; // Stores the read string literal
             std::vector<std::string> writeBuffer; // Stores what should be written IN ORDER
             std::ifstream inputDatabaseFilestream(storedDatabaseDirectory);
@@ -74,7 +77,7 @@ class NDFS{
             return 0; // Success
         }
         int getColumnPosition(std::string columnName){ // Get position of column
-            if(isLocked()) return -2; // Checks if database is locked
+            if(isLocked()) {std::cerr << "Lockfile present"; return -2;} // Checks if database is locked
             lock();
             std::string readBuffer; // Stores whole file
             std::ifstream inputDatabaseFilestream(storedDatabaseDirectory);
