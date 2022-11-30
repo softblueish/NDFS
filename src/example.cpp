@@ -1,5 +1,5 @@
 #include "libNDFS.cpp"
 
 int main(){
-    NDFS database("exampleDatabases/testing.ndfs");
+    NDFS database("../exampleDatabases/testing.ndfs");
 }
