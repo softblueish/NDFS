@@ -4,11 +4,11 @@
 
 class NDFS{
     public:
-    
         NDFS(std::string databaseDirectory){ // Create or open a database
             storedDatabaseDirectory = databaseDirectory; // Store database directory to variable
             lockfileDirectory = storedDatabaseDirectory + ".lock"; // Makes a lockfile directory for locking the database
-
+            if(isLocked()) {return -2;} // Checks if database is locked
+            
             std::ifstream inputDatabaseFilestream(databaseDirectory); // Check if database is empty, if not, initialize one
             lock();
             std::string buffer;
@@ -22,11 +22,17 @@ class NDFS{
             unlock();
         }
         bool isLocked(){ // Checks if the database is locked and returns the value
-            std::ifstream(lockfileDirectory);
-            return lockfileDirectory.good();
+            std::ifstream lockfile(lockfileDirectory);
+            std::string locktest;
+            lockfile >> locktest;
+            lockfile.close();
+            if(locktest.compare("lock")==0){
+                return true;
+            } 
+            return false;
         }
         int createColumn(std::string columnName){ // Creates a column in the database
-            if(!isLocked()) return 1; // Checks if database is locked
+            if(isLocked()) {return -2;} // Checks if database is locked
             lock();
 
             std::string readBuffer; // Stores the read string literal
@@ -68,18 +74,44 @@ class NDFS{
             return 0; // Success
         }
         int getColumnPosition(std::string columnName){ // Get position of column
+            if(isLocked()) return -2; // Checks if database is locked
             lock();
+            std::string readBuffer; // Stores whole file
+            std::ifstream inputDatabaseFilestream(storedDatabaseDirectory);
+            inputDatabaseFilestream >> readBuffer; // Reads the file
+            std::string blockBuffer; // Stores info as blocks
+            int cursor;
+            std::vector<std::string> separatedBuffer;
+            for(int i = 0; i < readBuffer.size(); i++){
+                if(readBuffer.at(i)=='$'){
+                    break;
+                }
+                if(readBuffer.at(i)==';'){
+                    cursor++;
+                    separatedBuffer.push_back(blockBuffer);
+                    blockBuffer = "";
+                } else {
+                    blockBuffer.append(readBuffer.substr(i, 1));
+                }
+            }
 
-
+            for(int i = 0; i < separatedBuffer.size(); i++){
+                if(separatedBuffer.at(i).compare(columnName)==0){
+                    unlock();
+                    return i;
+                }
+            }
             unlock();
+            return -1; // Cant find it
         }
+
     private:
         std::string storedDatabaseDirectory;
         std::string lockfileDirectory;
 
         void lock(){ // Locks the database
             std::ofstream lockfile(lockfileDirectory);
-            lockfile << " ";
+            lockfile << "lock";
             lockfile.close();
         }
         void unlock(){ // Unlocks the database
