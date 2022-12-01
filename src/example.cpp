@@ -2,5 +2,5 @@
 
 int main(){
     NDFS database("../exampleDatabases/testing.ndfs");
-    database.createColumn("Name");
+    database.renameColumn("Name", "Country");
 }

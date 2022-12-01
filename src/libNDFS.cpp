@@ -37,10 +37,8 @@ class NDFS{
 
         // Column manipulation
         int createColumn(std::string columnName){ // Creates a column in the database
-        
             if(isLocked()) {std::cerr << "Lockfile present\n"; return -2;} // Checks if database is locked
             if(getColumnPosition(columnName)>-1){std::cerr << "Column already exists\n"; return -1;} // Checks that the column doesnt already exist
-            
             lock();
             std::string readBuffer; // Stores the read string literal
             std::vector<std::string> writeBuffer; // Stores what should be written IN ORDER
@@ -111,11 +109,54 @@ class NDFS{
             unlock();
             return -1; // Cant find it
         }
+        int renameColumn(std::string oldColumnName, std::string newColumnName){ // Rename a column
+            if(isLocked()) {std::cerr << "Lockfile present\n"; return -2;} // Checks if database is locked
+            if(getColumnPosition(oldColumnName)<0){std::cerr << "Column doesn't exist\n"; return -1;} // Checks that the column doesnt already exist
+            if(getColumnPosition(newColumnName)>-1){std::cerr << "Column already exists\n"; return -1;} // Checks that the column doesnt already exist
+            lock();
+            std::string readBuffer; // Stores the read string literal
+            std::vector<std::string> writeBuffer; // Stores what should be written IN ORDER
+            std::ifstream inputDatabaseFilestream(storedDatabaseDirectory);
+            inputDatabaseFilestream >> readBuffer; // Read entire file
+            inputDatabaseFilestream.close();
+            std::string blockBuffer; // Stores blocks of data temporarily
+            int cursor=0; // Selects the block in the string literal
+            int section=0; // Selects the section
+            for(int i = 0; i<readBuffer.size(); i++){ // Rereads the database an injects the new column
+                if(readBuffer.at(i)=='$'&&section==0){ // If new section
+                    section++;
+                    writeBuffer.push_back("$");
+                }
+                if(readBuffer.at(i)==';'){ // If new block
+                    cursor++;
+                    if(blockBuffer.compare(oldColumnName)==0) blockBuffer = newColumnName;
+                    writeBuffer.push_back(blockBuffer);
+                    blockBuffer = "";
+                    writeBuffer.push_back(";");
+                }else if(readBuffer.at(i)==':'&&section==1){ // If new row
+                    writeBuffer.push_back(":");
+                }else{ // Write to blockbuffer
+                    blockBuffer.append(readBuffer.substr(i, 1));
+                }
+            }
+
+            std::string toFileBuffer;
+            for(int i = 0; i<writeBuffer.size(); i++){ // Compile the file
+                toFileBuffer.append(writeBuffer.at(i));
+            }
+            std::ofstream outputDatebaseFileStream(storedDatabaseDirectory);
+            outputDatebaseFileStream << toFileBuffer; // Write to file
+            outputDatebaseFileStream.close();
+
+            unlock();
+            return 0; // Success
+        }
         int removeColumn(std::string columnName){ // NEEDS TO BE DONE WHEN ROWS ARE DONE
 
-        // Row manipulation
-
+        return -1; // No Code
         }
+        
+        // Row manipulation
 
     private:
         std::string storedDatabaseDirectory;
