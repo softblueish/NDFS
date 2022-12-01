@@ -1,6 +1,9 @@
 #include "libNDFS.cpp"
 
 int main(){
-    NDFS database("../exampleDatabases/testing.ndfs");
-    database.renameColumn("Name", "Country");
+    NDFS database("../exampleDatabases/example.ndfs");
+    while(database.faillock){
+        NDFS database("../exampleDatabases/example.ndfs");
+    }
+    database.renameColumn("AgeNew", "Age");
 }

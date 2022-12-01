@@ -4,26 +4,8 @@
 
 class NDFS{
     public:
-
         // Basic functionality
         bool faillock = false; // If the database has a lock present, this will become true.
-        NDFS(std::string databaseDirectory){ // Create or open a database
-            storedDatabaseDirectory = databaseDirectory; // Store database directory to variable
-            lockfileDirectory = storedDatabaseDirectory + ".lock"; // Makes a lockfile directory for locking the database
-            if(isLocked()) {faillock = true; std::cerr << "Lockfile present\n"; return;} // Checks if database is locked
-            faillock = false;
-            std::ifstream inputDatabaseFilestream(databaseDirectory); // Check if database is empty, if not, initialize one
-            lock();
-            std::string buffer;
-            inputDatabaseFilestream >> buffer;
-            inputDatabaseFilestream.close();
-            if(buffer.size()<1){
-                std::ofstream outputDatabaseFilestream(databaseDirectory);
-                outputDatabaseFilestream << "$";
-                outputDatabaseFilestream.close();
-            }
-            unlock();
-        }
         bool isLocked(){ // Checks if the database is locked and returns the value
             std::ifstream lockfile(lockfileDirectory);
             std::string locktest;
@@ -34,11 +16,31 @@ class NDFS{
             } 
             return false;
         }
+        
+        // Constructor
+        NDFS(std::string databaseDirectory){ // Create or open a database
+            storedDatabaseDirectory = databaseDirectory; // Store database directory to variable
+            lockfileDirectory = storedDatabaseDirectory + ".lock"; // Makes a lockfile directory for locking the database
+            if(isLocked()) {faillock = true; std::cerr << "Lockfile present\n";} else { // Checks if database is locked
+                faillock = false;
+                std::ifstream inputDatabaseFilestream(databaseDirectory); // Check if database is empty, if not, initialize one
+                lock();
+                std::string buffer;
+                inputDatabaseFilestream >> buffer;
+                inputDatabaseFilestream.close();
+                if(buffer.size()<1){
+                    std::ofstream outputDatabaseFilestream(databaseDirectory);
+                    outputDatabaseFilestream << "$";
+                    outputDatabaseFilestream.close();
+                }
+                unlock();
+            }
+        }
 
         // Column manipulation
         int createColumn(std::string columnName){ // Creates a column in the database
             if(isLocked()) {std::cerr << "Lockfile present\n"; return -2;} // Checks if database is locked
-            if(getColumnPosition(columnName)>-1){std::cerr << "Column already exists\n"; return -1;} // Checks that the column doesnt already exist
+            if(getColumnPosition(columnName)>-1){std::cerr << "createColumn: Column already exists\n"; return -1;} // Checks that the column doesnt already exist
             lock();
             std::string readBuffer; // Stores the read string literal
             std::vector<std::string> writeBuffer; // Stores what should be written IN ORDER
@@ -111,8 +113,8 @@ class NDFS{
         }
         int renameColumn(std::string oldColumnName, std::string newColumnName){ // Rename a column
             if(isLocked()) {std::cerr << "Lockfile present\n"; return -2;} // Checks if database is locked
-            if(getColumnPosition(oldColumnName)<0){std::cerr << "Column doesn't exist\n"; return -1;} // Checks that the column doesnt already exist
-            if(getColumnPosition(newColumnName)>-1){std::cerr << "Column already exists\n"; return -1;} // Checks that the column doesnt already exist
+            if(getColumnPosition(oldColumnName)<0){std::cerr << "renameColumn: Column doesn't exist\n"; return -1;} // Checks that the column doesnt already exist
+            if(getColumnPosition(newColumnName)>-1){std::cerr << "renameColumn: Column already exists\n"; return -1;} // Checks that the column doesnt already exist
             lock();
             std::string readBuffer; // Stores the read string literal
             std::vector<std::string> writeBuffer; // Stores what should be written IN ORDER
